@@ -1,0 +1,140 @@
+#Synthetic Personal Assistant and Resource Coordinator
+import speech_recognition as sr
+from datetime import datetime
+import requests
+import pyttsx3
+import webbrowser
+
+# Initialize the pyttsx3 engine for text-to-speech
+engine = pyttsx3.init()
+
+recognizer = sr.Recognizer()
+
+# Function to change the voice type
+def set_voice(voice_type = 18):
+    voices = engine.getProperty('voices')
+    engine.setProperty('voice', voices[voice_type].id)
+
+# Function to change the speaking speed
+def set_speech_rate(rate = 150):
+    engine.setProperty('rate', rate)  # 150 is the default rate
+
+# Function to speak the response
+def speak(text):
+    engine.say(text)
+    engine.runAndWait()
+
+API_KEY = '<your api key>'  #Replace with your actual OpenWeatherMap API key
+BASE_URL = "http://api.openweathermap.org/data/2.5/weather?"
+
+
+def capture_voice_input():
+    with sr.Microphone() as source:
+        print("Listening...")
+        audio = recognizer.listen(source)
+    return audio
+
+def convert_voice_to_text(audio):
+    try:
+        text = recognizer.recognize_google(audio)
+        print("You said: " + text)
+    except sr.UnknownValueError:
+        text = ""
+        print("I didn't understand that.")
+        speak("I didn't understand that.")
+    except sr.RequestError as e:
+        text = ""
+        print("Error; {0}".format(e))
+    return text
+
+
+# Function to get weather data
+def get_weather(city):
+    complete_url = f"{BASE_URL}q={city}&appid={API_KEY}&units=imperial"  # 'units=metric' for Celsius vs 'units=imperial' for Fahrenheit
+    response = requests.get(complete_url)
+
+    if response.status_code == 200:
+        data = response.json()
+        main = data['main']
+        wind = data['wind']
+        weather = data['weather'][0]
+        
+        temperature = main['temp']
+        humidity = main['humidity']
+        wind_speed = wind['speed']
+        weather_description = weather['description']
+        
+        weather_info = (f"The weather in {city} is {temperature} degrees fahrenheit, "
+                        f"humidity is {humidity} percent, wind speed is {wind_speed} miles per hour, "
+                        f"and it is {weather_description}.")
+        #Feature Implementation: Depending on the weather description, I want it to give recommnedations like umbrella, sunglasses & sunscreen, winter coat and depending on weather long sleeves vs short sleeves, and sweater vs no outerwear
+        
+        speak(weather_info)  # Speak the weather information
+        return weather_info
+    else:
+        speak("City not found or an error occurred.")
+        return None
+
+    
+def process_voice_command(text):
+    text = text.lower()
+
+    if "spark" in text.lower():
+        response = "Hello sir! What can I help you with?"
+        print("Hello sir! What can I help you with?")
+        speak(response)
+
+    elif "morning rundown" in text.lower():
+        today = datetime.now().strftime("%B %d, %Y") #Gives the date MM/DD/YYYY
+        now = datetime.now().strftime("%I:%M:%S %p") #Gives the time in 12hr
+        city = "West Lafayette" #Default city for weather
+        response = f"Today is {today}. It is {now}." + get_weather(city)
+        print(f"Today is {today}.\n It is {now}.\n" + get_weather(city))
+        speak(response)
+
+    elif "time" in text.lower():
+        now = datetime.now().strftime("%I:%M:%S %p")
+        response = f"It is {now}"
+        print(f"It is {now}")
+        speak(response)
+
+    elif "date" in text.lower():
+        today = datetime.now().strftime("%B %d, %Y")
+        response = f"Today is {today}"
+        print(f"Today is {today}")
+        speak(response)
+
+    elif "weather in" in text:
+        # Extract the city name from the user's speech
+        words = text.split()
+        city_index = words.index("in") + 1  # Find the word after "in" (assumed to be the city)
+        city = " ".join(words[city_index:])
+        get_weather(city)  # Call the weather function to get the weather for the city
+
+    elif "that's all" in text.lower():
+        response = "Have a great day sir!"
+        print("Have a great day sir!")
+        speak(response)
+        return True
+    
+    else:
+        print("I don't understand.")
+        speak("I don't understand.")
+    
+    return False
+
+# Main function to capture voice and process commands
+def main():
+    recognizer = sr.Recognizer()
+    end_program = False
+    set_voice(122)  # Set to voice index
+    set_speech_rate(175)  # Adjust speaking speed if desired
+
+    while not end_program:
+        audio = capture_voice_input()  # Capture voice input
+        text = convert_voice_to_text(audio)  # Convert speech to text
+        if text:
+            end_program = process_voice_command(text)  # Process the command
+
+if __name__ == "__main__":
+    main()
