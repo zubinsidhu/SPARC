@@ -7,7 +7,7 @@ Before running this script, ensure the `GOOGLE_API_KEY` environment
 variable is set to the api-key you obtained from Google AI Studio.
 '''
 
-from SPARC.SPARC_Online import SPARC
+from SPARC.SPARC_Online.py import SPARC
 import asyncio
 
 async def main():
