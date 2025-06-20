@@ -36,7 +36,7 @@ SPARC is a helpful AI assistant specializing in STEM fields, designed to provide
 
 1.  **Clone the Repository:**
     ```bash
-    git clone https://github.com/Nlouis38/sparc.git
+    git clone https://github.com/zubinsidhu/sparc.git
     cd Mark\ II
     ```
 2.  **Install Dependencies:**
